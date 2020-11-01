@@ -1,10 +1,6 @@
 from laspy.file import File
 import numpy as np
-<<<<<<< HEAD
 # import pptk
-=======
-import pptk
->>>>>>> d7c83eafb40bcfa7368a13b28c94d709fa623989
 import open3d as o3d
 
 
