@@ -1,0 +1,10 @@
+.vscode
+.vscode/*
+
+3D
+3D/*
+
+.DS_Store
+
+# The datafile from the teacher should not be published online
+Data09.las
