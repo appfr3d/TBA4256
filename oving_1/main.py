@@ -49,6 +49,7 @@ def RANSAC(xyz: np.ndarray, iteration: int):
         region_points = {}
         region_points[point_str(rand_point[0])] = rand_point[0]
 
+        # Loop through the points and add them to the region points if they are close to another open region point
 
         # region_points[str(rand_point[0]) + str(rand_point[1]) + str(rand_point[2])]
         return close_plane_points
