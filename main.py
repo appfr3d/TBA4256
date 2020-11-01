@@ -1,11 +1,6 @@
 from laspy.file import File
 import numpy as np
-<<<<<<< HEAD
-# import pptk
-=======
 import pptk
->>>>>>> d7c83eafb40bcfa7368a13b28c94d709fa623989
-import open3d as o3d
 
 
 def pre_processing(dataFile: File) -> np.ndarray:
@@ -45,19 +40,6 @@ def RANSAC(xyz: np.ndarray, iteration: int):
         close = distances <= max_distance
         return points[close]
 
-    def region_grow_plane(rand_point, close_plane_points):
-
-        def point_str(point):
-            return str(point[0]) + ',' + str(point[1]) + ',' + str(point[2])
-
-        region_points = {}
-        region_points[point_str(rand_point[0])] = rand_point[0]
-
-        # Loop through the points and add them to the region points if they are close to another open region point
-
-        # region_points[str(rand_point[0]) + str(rand_point[1]) + str(rand_point[2])]
-        return close_plane_points
-
     # Find random point
     indx = np.random.randint(0, xyz.shape[0], 1)
     rand_point = xyz[indx]
@@ -89,16 +71,15 @@ def RANSAC(xyz: np.ndarray, iteration: int):
     # If the angle of the plane is not suitable, start RANSAC again
     # Suitable roof angles: between 15 and 60, over 90deg? remove 90 from it. negative? use abs.
     plane_angle = np.abs(calculate_plane_angle(cp))
-    # if plane_angle > 90:
-    #    plane_angle =
+    if plane_angle > 90:
+        plane_angle -= 90
 
     # Check if plane angle is suitable for a roof, else start RANSAC again
-    if 15 > plane_angle or plane_angle > 60:
+    if 15 > plane_angle > 60:
         return RANSAC(xyz, iteration+1)
 
-    print('Plane angle:', plane_angle)
+    print('Plane angle:', calculate_plane_angle(cp))
 
-    # Only use ponist close to the plane
     max_plane_distance = 0.1  # 10cm
 
     plane_distances = np.abs(np.sum(cp*xyz, axis=1) - d) / \
@@ -107,10 +88,9 @@ def RANSAC(xyz: np.ndarray, iteration: int):
     close_plane_points = calculate_close_points(
         xyz, plane_distances, max_plane_distance)
 
-    # Grow from the rand_point to the edge of the roof
-    roof_points = region_grow_plane(rand_point, close_plane_points)
+    # TODO: Make a region growing algorithm, and grow from the rand_point to the edge of the roof
 
-    return roof_points, iteration, rand_point
+    return close_plane_points, iteration
 
 
 # # # Read the data and preprocess it
@@ -120,43 +100,23 @@ xyz = pre_processing(dataFile)
 
 
 # # # Do RANSAC
-RANSAC_points, iterations, rand_point = RANSAC(xyz, 0)
+RANSAC_points, iterations = RANSAC(xyz, 0)
 
 print('Total iterations in RANSAC: ' + str(iterations))
 print('Total number of points after RANSAC: ' + str(RANSAC_points.shape[0]))
 
 # # # Show the points
 
-# # pptk
-
 # v = pptk.viewer(RANSAC_points, RANSAC_points[:, 2])
 # v.set(point_size=0.05)
 # v.color_map('jet', scale=[0, 5])
 
-# v = pptk.viewer(xyz, xyz[:, 2])
+
+v = pptk.viewer(xyz, xyz[:, 2])
 # v.color_map('jet', scale=[0, 5])
 # v.color_map([[0, 0, 0], [1, 1, 1]])
 
 # v.load(RANSAC_points, RANSAC_points[:, 2])
 
-# # open3d
-cloud = o3d.geometry.PointCloud()
-cloud.points = o3d.utility.Vector3dVector(xyz)
-cloud.paint_uniform_color([0.1, 0.1, 0.1])
 
-
-# Elevate roof points to make them visible
-RANSAC_points = RANSAC_points + [0, 0, 1]
-
-roof = o3d.geometry.PointCloud()
-roof.points = o3d.utility.Vector3dVector(RANSAC_points)
-roof.paint_uniform_color([0.9, 0.1, 0.1])
-
-r = o3d.geometry.PointCloud()
-r.points = o3d.utility.Vector3dVector(rand_point + [0, 0, 2])
-r.paint_uniform_color([0.1, 0.1, 0.9])
-
-# , point_show_normal=True)
-o3d.visualization.draw_geometries([cloud, roof, r])
-
-# input()  # prevent end
+input()  # prevent end
