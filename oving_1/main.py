@@ -1,16 +1,9 @@
 from laspy.file import File
 import numpy as np
-# import pptk
 import open3d as o3d
 
 
 def pre_processing(dataFile: File) -> np.ndarray:
-    z_mean = dataFile.header.max[2] - dataFile.header.min[2]
-
-    # print(dataFile.header.offset)
-    # print(dataFile.header.max)
-    # print(dataFile.header.min)
-
     # Coords of all the points
     coords = np.vstack((dataFile.x, dataFile.y, dataFile.z)).transpose()
 
@@ -84,7 +77,6 @@ def RANSAC(xyz: np.ndarray, iteration: int):
     # Find random point
     indx = np.random.randint(0, xyz.shape[0], 1)
     rand_point = xyz[indx]
-    # print('rand_point:', rand_point)
 
     # Calculate distances from rand_point
     point_distances = np.sqrt(np.sum((xyz - rand_point)**2, axis=1))
@@ -104,11 +96,8 @@ def RANSAC(xyz: np.ndarray, iteration: int):
     other_points = close_points[other_indxs]
 
     # Check if the plane has a good angle
-    cp, d = plane_from_three_points(
+    cp, _ = plane_from_three_points(
         rand_point, other_points[0], other_points[1])
-
-    # new_cp, new_d = plane_from_three_points(
-    #     rand_point[0], other_points[0], other_points[1])
 
     # If the denominator is zero, start RANSAC again
     if np.abs(np.sum(cp**2, axis=1)) < 0.0001:
@@ -118,8 +107,6 @@ def RANSAC(xyz: np.ndarray, iteration: int):
     # If the angle of the plane is not suitable, start RANSAC again
     # Suitable roof angles: between 15 and 60, over 90deg? remove 90 from it. negative? use abs.
     plane_angle = np.abs(calculate_plane_angle(cp))
-    # if plane_angle > 90:
-    #    plane_angle =
 
     # Check if plane angle is suitable for a roof, else start RANSAC again
     if 15 > plane_angle or plane_angle > 60:
@@ -144,7 +131,7 @@ def RANSAC(xyz: np.ndarray, iteration: int):
 
     # Class to store planes
     class Plane():
-        def __init__(self, points, angle: float):
+        def __init__(self, points: np.ndarray, angle: float):
             self.points = points
             self.angle = angle
         
@@ -157,7 +144,7 @@ def RANSAC(xyz: np.ndarray, iteration: int):
     ransac_run_num = 0
     max_plane_distance = 0.5  # 50cm
 
-    '''
+    
     while ransac_run_num < ransac_tot_runs:
         rand_indxs = np.random.choice(region_points.shape[0], 3, replace=False)
         rand_points = region_points[rand_indxs]
@@ -184,19 +171,14 @@ def RANSAC(xyz: np.ndarray, iteration: int):
 
 
     # Coose the ransac_roof with the most points
-
     best_roof_index = np.argmax(saved_ransac_roofs)
-    '''
+    best_roof = saved_ransac_roofs[best_roof_index]
     
-    #if roof_points.shape[0] < 100:
-    #    print('Too few points in roof_points:', roof_points.shape[0])
-    #    return RANSAC(xyz, iteration+1)
-    
-    # print status about the points:
-    # print('------- DONE -------')
-    # print('Plane angle                        :', plane_angle)
+    if best_roof.points.shape[0] < 800:
+        print('Too few points in best_roof:', best_roof.points.shape[0])
+        return RANSAC(xyz, iteration+1)
 
-    return region_points, iteration #  saved_ransac_roofs[best_roof_index].points, iteration
+    return best_roof.points, iteration # region_points, iteration #  
 
 
 # # # Read the data and preprocess it
@@ -205,36 +187,23 @@ dataFile = File('Data09.las', mode='r')
 xyz = pre_processing(dataFile)
 
 
-# # # Do RANSAC several times
+# # # Do RANSAC several times and save the results
 roofs = np.zeros((1,3))
-for i in range(5):
+for i in range(20):
     RANSAC_points, iterations = RANSAC(xyz, 0)
     print('------- DONE -------')
+    print('Info about roof numer:', i + 1)
     print('Total iterations in RANSAC         : ' + str(iterations))
     print('Total number of points after RANSAC: ' + str(RANSAC_points.shape[0]))
+
     # Elevate roof points to make them visible
     RANSAC_points = RANSAC_points + [0, 0, 0.1]
-    # print(RANSAC_points.shape)
     roofs = np.append(roofs, RANSAC_points, axis=0)
-    # print(roofs.shape)
 
 roofs = np.delete(roofs, 0, axis=0)
 print(roofs.shape)
+
 # # # Show the points
-
-# # pptk
-
-# v = pptk.viewer(RANSAC_points, RANSAC_points[:, 2])
-# v.set(point_size=0.05)
-# v.color_map('jet', scale=[0, 5])
-
-# v = pptk.viewer(xyz, xyz[:, 2])
-# v.color_map('jet', scale=[0, 5])
-# v.color_map([[0, 0, 0], [1, 1, 1]])
-
-# v.load(RANSAC_points, RANSAC_points[:, 2])
-
-# # open3d
 cloud = o3d.geometry.PointCloud()
 cloud.points = o3d.utility.Vector3dVector(xyz)
 cloud.paint_uniform_color([0.1, 0.1, 0.1])
@@ -243,11 +212,8 @@ roof = o3d.geometry.PointCloud()
 roof.points = o3d.utility.Vector3dVector(roofs)
 roof.paint_uniform_color([0.9, 0.1, 0.1])
 
-# r = o3d.geometry.PointCloud()
-# r.points = o3d.utility.Vector3dVector(rand_point + [0, 0, 2])
-# r.paint_uniform_color([0.1, 0.1, 0.9])
 
-# , point_show_normal=True)
 o3d.visualization.draw_geometries([cloud, roof])
 
-# input()  # prevent end
+
+# , point_show_normal=True)
