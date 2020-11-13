@@ -142,6 +142,8 @@ def RANSAC(xyz: np.ndarray, iteration: int):
     saved_ransac_roofs = np.array([Plane(np.zeros((1,3)), angle=0)], dtype=Plane)
     ransac_tot_runs = 50
     ransac_run_num = 0
+
+    # TODO: Test different values
     max_plane_distance = 0.5  # 50cm
 
     
