@@ -189,7 +189,7 @@ xyz = pre_processing(dataFile)
 
 # # # Do RANSAC several times and save the results
 roofs = np.zeros((1,3))
-for i in range(20):
+for i in range(2):
     RANSAC_points, iterations = RANSAC(xyz, 0)
     print('------- DONE -------')
     print('Info about roof numer:', i + 1)
@@ -197,7 +197,7 @@ for i in range(20):
     print('Total number of points after RANSAC: ' + str(RANSAC_points.shape[0]))
 
     # Elevate roof points to make them visible
-    RANSAC_points = RANSAC_points + [0, 0, 0.1]
+    RANSAC_points = RANSAC_points + [0, 0, 0.01]
     roofs = np.append(roofs, RANSAC_points, axis=0)
 
 roofs = np.delete(roofs, 0, axis=0)

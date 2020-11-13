@@ -1,6 +1,8 @@
 .vscode
 .vscode/*
 
+.idea/
+
 3D
 3D/*
 
@@ -8,3 +10,5 @@
 
 # The datafile from the teacher should not be published online
 oving_1/Data09.las
+oving_2/*.las
+
