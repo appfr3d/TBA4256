@@ -191,7 +191,7 @@ xyz = pre_processing(dataFile)
 
 # # # Do RANSAC several times and save the results
 roofs = np.zeros((1,3))
-for i in range(2):
+for i in range(40):
     RANSAC_points, iterations = RANSAC(xyz, 0)
     print('------- DONE -------')
     print('Info about roof numer:', i + 1)
@@ -204,7 +204,6 @@ for i in range(2):
 
 roofs = np.delete(roofs, 0, axis=0)
 print(roofs.shape)
-
 # # # Show the points
 cloud = o3d.geometry.PointCloud()
 cloud.points = o3d.utility.Vector3dVector(xyz)
@@ -215,7 +214,236 @@ roof.points = o3d.utility.Vector3dVector(roofs)
 roof.paint_uniform_color([0.9, 0.1, 0.1])
 
 
-o3d.visualization.draw_geometries([cloud, roof])
+o3d.visualization.draw_geometries([cloud, roofs])
 
 
 # , point_show_normal=True)
+
+'''
+------- DONE -------
+Info about roof numer: 1
+Total iterations in RANSAC         : 27
+Total number of points after RANSAC: 1792
+
+------- DONE -------
+Info about roof numer: 2
+Total iterations in RANSAC         : 21
+Total number of points after RANSAC: 858
+
+------- DONE -------
+Info about roof numer: 3
+Total iterations in RANSAC         : 35
+Total number of points after RANSAC: 2303
+
+------- DONE -------
+Info about roof numer: 4
+Total iterations in RANSAC         : 9
+Total number of points after RANSAC: 3022
+
+------- DONE -------
+Info about roof numer: 5
+Total iterations in RANSAC         : 6
+Total number of points after RANSAC: 2814
+
+------- DONE -------
+Info about roof numer: 6
+Total iterations in RANSAC         : 67
+Total number of points after RANSAC: 1792
+
+------- DONE -------
+Info about roof numer: 7
+Total iterations in RANSAC         : 25
+Total number of points after RANSAC: 3063
+
+------- DONE -------
+Info about roof numer: 8
+Total iterations in RANSAC         : 77
+Total number of points after RANSAC: 1005
+
+------- DONE -------
+Info about roof numer: 9
+Total iterations in RANSAC         : 18
+Total number of points after RANSAC: 2123
+
+------- DONE -------
+Info about roof numer: 10
+Total iterations in RANSAC         : 36
+Total number of points after RANSAC: 2194
+
+------- DONE -------
+Info about roof numer: 11
+Total iterations in RANSAC         : 40
+Total number of points after RANSAC: 955
+
+------- DONE -------
+Info about roof numer: 12
+Total iterations in RANSAC         : 23
+Total number of points after RANSAC: 4690
+
+------- DONE -------
+Info about roof numer: 13
+Total iterations in RANSAC         : 2
+Total number of points after RANSAC: 2689
+
+------- DONE -------
+Info about roof numer: 14
+Total iterations in RANSAC         : 3
+Total number of points after RANSAC: 2803
+
+------- DONE -------
+Info about roof numer: 15
+Total iterations in RANSAC         : 11
+Total number of points after RANSAC: 1633
+
+------- DONE -------
+Info about roof numer: 16
+Total iterations in RANSAC         : 5
+Total number of points after RANSAC: 1322
+
+------- DONE -------
+Info about roof numer: 17
+Total iterations in RANSAC         : 78
+Total number of points after RANSAC: 3056
+
+------- DONE -------
+Info about roof numer: 18
+Total iterations in RANSAC         : 3
+Total number of points after RANSAC: 2068
+
+------- DONE -------
+Info about roof numer: 19
+Total iterations in RANSAC         : 31
+Total number of points after RANSAC: 4178
+
+------- DONE -------
+Info about roof numer: 20
+Total iterations in RANSAC         : 10
+Total number of points after RANSAC: 2206
+
+(46566, 3)
+'''
+
+
+
+'''
+------- DONE -------
+Info about roof numer: 1
+Total iterations in RANSAC         : 18
+Total number of points after RANSAC: 2049
+
+
+------- DONE -------
+Info about roof numer: 2
+Total iterations in RANSAC         : 47
+Total number of points after RANSAC: 2885
+
+
+------- DONE -------
+Info about roof numer: 3
+Total iterations in RANSAC         : 14
+Total number of points after RANSAC: 3373
+
+
+------- DONE -------
+Info about roof numer: 4
+Total iterations in RANSAC         : 35
+Total number of points after RANSAC: 2133
+
+
+------- DONE -------
+Info about roof numer: 5
+Total iterations in RANSAC         : 0
+Total number of points after RANSAC: 2200
+
+
+------- DONE -------
+Info about roof numer: 6
+Total iterations in RANSAC         : 14
+Total number of points after RANSAC: 3441
+
+
+------- DONE -------
+Info about roof numer: 7
+Total iterations in RANSAC         : 32
+Total number of points after RANSAC: 2342
+
+
+------- DONE -------
+Info about roof numer: 8
+Total iterations in RANSAC         : 3
+Total number of points after RANSAC: 1159
+
+
+------- DONE -------
+Info about roof numer: 9
+Total iterations in RANSAC         : 11
+Total number of points after RANSAC: 1094
+
+
+------- DONE -------
+Info about roof numer: 10
+Total iterations in RANSAC         : 22
+Total number of points after RANSAC: 3202
+
+
+------- DONE -------
+Info about roof numer: 11
+Total iterations in RANSAC         : 16
+Total number of points after RANSAC: 1603
+
+
+------- DONE -------
+Info about roof numer: 12
+Total iterations in RANSAC         : 140
+Total number of points after RANSAC: 3284
+
+
+------- DONE -------
+Info about roof numer: 13
+Total iterations in RANSAC         : 63
+Total number of points after RANSAC: 3284
+
+
+------- DONE -------
+Info about roof numer: 14
+Total iterations in RANSAC         : 7
+Total number of points after RANSAC: 2166
+
+
+------- DONE -------
+Info about roof numer: 15
+Total iterations in RANSAC         : 4
+Total number of points after RANSAC: 2828
+
+
+------- DONE -------
+Info about roof numer: 16
+Total iterations in RANSAC         : 30
+Total number of points after RANSAC: 3154
+
+
+------- DONE -------
+Info about roof numer: 17
+Total iterations in RANSAC         : 3
+Total number of points after RANSAC: 2500
+
+
+------- DONE -------
+Info about roof numer: 18
+Total iterations in RANSAC         : 0
+Total number of points after RANSAC: 2223
+
+
+------- DONE -------
+Info about roof numer: 19
+Total iterations in RANSAC         : 22
+Total number of points after RANSAC: 3085
+
+
+------- DONE -------
+Info about roof numer: 20
+Total iterations in RANSAC         : 17
+Total number of points after RANSAC: 2658
+
+(50663, 3)
+'''
