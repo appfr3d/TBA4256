@@ -8,7 +8,9 @@
 
 .DS_Store
 
-# The datafile from the teacher should not be published online
-oving_1/Data09.las
-oving_2/*.las
+# The datafiles should not be published online
+*/*.las
 
+
+# The pptk.whl
+*.whl

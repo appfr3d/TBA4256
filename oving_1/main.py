@@ -33,7 +33,7 @@ def RANSAC(xyz: np.ndarray, iteration: int):
     def calculate_close_points(points, distances, max_distance, min_distance = -1):
         all_close = distances <= max_distance
         if min_distance > 0:
-            inner = distances <= min_distance
+            inner = distances >= min_distance
             return points[np.logical_and(all_close, inner)]
         return points[all_close]
 
