@@ -68,7 +68,7 @@ class RANSAC():
       tree_part, variance = self.run_ransac(good_part)
 
       # If the centers have a too high variance, try again
-      if variance > 2:
+      if variance > 1:
         print("tree part 0 has to high variance:", variance)
         continue
 
@@ -101,8 +101,8 @@ class RANSAC():
         next_tree_part, next_variance = self.run_ransac(close_points)
 
         # If the centers have a too high variance, try again
-        if variance > 2:
-          print("tree part", i, "has to high variance:", variance)
+        if next_variance > 1:
+          print("tree part", i, "has to high variance:", next_variance)
           continue
         
         # Old code, not removed to remeber it in the paper
@@ -206,7 +206,7 @@ class RANSAC():
         continue
  
       # Calculate which points are close to the circle
-      circle_offset = 0.1
+      circle_offset = 0.05
       center_distances = self.calculate_circle_ditances(cloud, center)
       circle_points = self.calculate_close_points(cloud, center_distances, radius + circle_offset, radius - circle_offset)
 
@@ -253,7 +253,7 @@ if __name__ == "__main__":
   cloud = o3d.geometry.PointCloud()
   cloud.points = o3d.utility.Vector3dVector(trees)
   # cloud.paint_uniform_color([0.1, 0.1, 0.1])
-  
+
   # Visualize the cloud
   o3d.visualization.draw_geometries([cloud])
 
