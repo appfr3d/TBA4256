@@ -57,6 +57,7 @@ class RANSAC():
     slices = self.slice_cloud(self.sorted_cloud, num_slices)
 
     tree = None
+    diameter = 0
     tree_found = False
     max_point_distance = 0.5 # Do not know the scale of this number yet
 
@@ -124,10 +125,11 @@ class RANSAC():
       # Set up a 3D bounding box around the tree stems
       all_distances = self.calculate_circle_ditances(self.sorted_cloud, center)
       tree = self.calculate_close_points(self.sorted_cloud, all_distances, max_point_distance + max_point_distance * 0.3)
+      diameter = tree_part.radius * 2
       tree_found = True
 
     # Export the point clouds inside the bounding boxes
-    return tree
+    return tree, diameter
 
   def sort_cloud(self, cloud):
     return cloud[np.argsort(cloud[:, 2])]
@@ -231,20 +233,18 @@ class RANSAC():
     # Return the best circle and the variace of the centers
     return best_circle, variance
      
-
-
-if __name__ == "__main__":
-  # Initialice the class
-  ransac = RANSAC()
-
+def visualize_10_trees(ransac):
   # # # Do RANSAC several times and save the results
   trees = np.zeros((1,3))
   for i in range(20):
     # Run the calculations
-    tree = ransac.run_calculations()
+    tree, diameter = ransac.run_calculations()
 
     # Show progress
     print("-"*5, "Found tree", i, "-"*5)
+    print('Number of points:', tree.shape[0])
+    print('Diameter        :', diameter)
+
     # Elevate roof points to make them visible
     # tree = tree + [0, 0, 0.01]
     trees = np.append(trees, tree, axis=0)
@@ -252,11 +252,13 @@ if __name__ == "__main__":
   print("-"*5, "DONE", "-"*5)
   trees = np.delete(trees, 0, axis=0)
 
-
   # Generate o3d cloud
   cloud = o3d.geometry.PointCloud()
   cloud.points = o3d.utility.Vector3dVector(trees)
   # cloud.paint_uniform_color([0.1, 0.1, 0.1])
+
+  # TODO: set up a BB around each tree
+
   # a = cloud.get_oriented_bounding_box
   # a = cloud.get_axis_aligned_bounding_box
   # add a in the list to draw
@@ -271,6 +273,65 @@ if __name__ == "__main__":
   # v.color_map('gray')
   # v.set(point_size=0.01)
 
+def visualize_good_slice(ransac):
+  # Terrain is already removed by using Cloud compare with the package CSF filter
+  # Sort cloud and store for later
+  sorted_cloud = ransac.sort_cloud(ransac.xyz)
+
+  # Slice point cloud in horizontal direction
+  num_slices = 60
+  slices = ransac.slice_cloud(sorted_cloud, num_slices)
+
+  # Generate o3d cloud
+  cloud = o3d.geometry.PointCloud()
+  cloud.points = o3d.utility.Vector3dVector(slices[14])
+  
+  # Visualize the cloud
+  o3d.visualization.draw_geometries([cloud])
+
+def visualize_bad_stem_cut(ransac):
+  sorted_cloud = ransac.sort_cloud(ransac.xyz)
+  num_slices = 5
+  slices = ransac.slice_cloud(sorted_cloud, num_slices)
+
+  cloud = slices[0]
+
+  # Find a random initial point
+  indx = np.random.randint(0, cloud.shape[0], 1)
+  rand_point = cloud[indx]
+
+  # Find the distnces to all other points in the cloud
+  # Only take the distance on x and y, not z
+  point_distances = np.sqrt(np.sum((cloud[:,:2] - rand_point[:,:2])**2, axis=1))
+
+  # Find close points to the random point
+  max_point_distance = 0.5
+  close_points = ransac.calculate_close_points(cloud, point_distances, max_point_distance)
+
+  # Calculate the center of the points
+  center = np.mean(close_points[:,:2], axis=0)
+
+  # A tree should be a circle with many points in the circle, but few or none points outside the circle
+  center_distances = ransac.calculate_circle_ditances(close_points, center)
+  max_circle_distance = np.max(center_distances)
+
+  circle_points = ransac.calculate_close_points(close_points, center_distances, max_circle_distance, max_circle_distance*0.3)
+
+  # Generate o3d cloud
+  cloud = o3d.geometry.PointCloud()
+  cloud.points = o3d.utility.Vector3dVector(circle_points)
+  
+  # Visualize the cloud
+  o3d.visualization.draw_geometries([cloud])
 
 
+if __name__ == "__main__":
+  # Initialice the class
+  ransac = RANSAC()
+
+  visualize_10_trees(ransac)
+  # visualize_good_slice(ransac)
+  # visualize_bad_stem_cut(ransac)
+
+  
 
