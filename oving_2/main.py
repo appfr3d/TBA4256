@@ -151,7 +151,7 @@ class RANSAC():
     if close_points.shape[0] < 1000:
       return self.find_good_part(cloud, max_point_distance)
 
-    # Calgulate the center of the points
+    # Calculate the center of the points
     center = np.mean(close_points[:,:2], axis=0)
 
     # A tree should be a circle with many points in the circle, but few or none points outside the circle
@@ -189,17 +189,19 @@ class RANSAC():
     saved_ransac_circles = np.array([Circle([0,0], 0, np.zeros((1,3)))], dtype=Circle)
 
     while saved_ransac_circles.shape[0] < num_runs:
+      # TODO: just choose 3 points at once, instead of 1 and then 2
       # Choose a random point
-      indx = np.random.randint(0, cloud.shape[0], 1)
-      rand_point = cloud[indx]
+      # indx = np.random.randint(0, cloud.shape[0], 1)
+      # rand_point = cloud[indx]
 
-      # Choose two new random points that are close to the rand_point, and are not the same
-      other_indxs = np.random.choice(cloud.shape[0], 2, replace=False)
-      other_points = cloud[other_indxs]
+      # Choose three random points that are not the same
+      rand_indices = np.random.choice(cloud.shape[0], 3, replace=False)
+      rand_points = cloud[rand_indices]
 
       # Make a circle with our tree random points
-      center, radius = define_circle(rand_point[0], other_points[0], other_points[1])
+      center, radius = define_circle(rand_points[0], rand_points[1], rand_points[2])
 
+      # TODO: test out if these values are correct to use
       # Try again if center or radius is bad
       if center is None or radius < 0.1 or radius > 2:
         continue
@@ -222,6 +224,9 @@ class RANSAC():
     # Find the circle with the most points
     best_circle_index = np.argmax(saved_ransac_circles)
     best_circle = saved_ransac_circles[best_circle_index]
+
+    # TODO: check the value of the radius, and set better rules afterwards
+    print('radius in best circle:', best_circle.radius)
 
     # Return the best circle and the variace of the centers
     return best_circle, variance
@@ -252,6 +257,9 @@ if __name__ == "__main__":
   cloud = o3d.geometry.PointCloud()
   cloud.points = o3d.utility.Vector3dVector(trees)
   # cloud.paint_uniform_color([0.1, 0.1, 0.1])
+  # a = cloud.get_oriented_bounding_box
+  # a = cloud.get_axis_aligned_bounding_box
+  # add a in the list to draw
 
   # Visualize the cloud
   o3d.visualization.draw_geometries([cloud])
