@@ -131,7 +131,6 @@ class RANSAC():
 
   def sort_cloud(self, cloud):
     return cloud[np.argsort(cloud[:, 2])]
-    # return np.sort(cloud, axis=0)
 
   def slice_cloud(self, cloud, num_slices):
     return np.array_split(cloud, num_slices)
