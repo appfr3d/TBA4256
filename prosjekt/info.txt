@@ -1,0 +1,117 @@
+
+A general pipeline:
+• Neighborhood definition
+• Neighborhood generation
+• Feature definition
+• Feature calculation within a neighborhood
+• Grouping neighborhood with similar features
+
+
+
+For grid_size = 8:
+Building:   114, 115, 121, 2723, 2724, 999, 1009, 1015, 1029, 1031
+Terrain:    102, 104, 105, 106, 110, 123, 125, 126, 2729, 2732
+Tree:       103, 2701, 2704, 2705, 2708, 2709, 2711, 2712, 2716, 2717
+
+
+
+Plain data from mean and std:
+Linearity:
+building: mean = 0.33163354789966903 ,  std = 0.22314989847269767
+terrain : mean = 0.26073646206657564 ,  std = 0.20541355868944247
+tree    : mean = 0.3241482310307115 ,   std = 0.0992331401230241
+
+Planarity:
+building: mean = 0.5804872035663875 ,   std = 0.20085302570089683
+terrain : mean = 0.7103112658591302 ,   std = 0.2066538052824296
+tree    : mean = 0.33303603180630464 ,  std = 0.1644886423915256
+
+Scattering:
+building: mean = 0.08787924853394344 ,  std = 0.07997034049152031
+terrain : mean = 0.028952272074294166 , std = 0.03997291609146649
+tree    : mean = 0.3428157371629839 ,   std = 0.1999472943763422
+
+Omnivariance:
+building: mean = 0.1970603392467401 ,   std = 0.05409147272808733
+terrain : mean = 0.12133496465833707 ,  std = 0.06552696429701725
+tree    : mean = 0.28171727165415233 ,  std = 0.05449467707371121
+
+Sum of eigenvalues:
+building: mean = 11.058980588099054 ,   std = 4.218764065519831
+terrain : mean = 10.246352410326667 ,   std = 1.5341484846981466
+tree    : mean = 12.385173027039873 ,   std = 3.0871609850495547
+
+Anisotropy:
+building: mean = 0.9121207514660565 ,   std = 0.07997034049152028
+terrain : mean = 0.9710477279257057 ,   std = 0.03997291609146648
+tree    : mean = 0.6571842628370163 ,   std = 0.19994729437634223
+
+Eigenentropy:
+building: mean = 0.7935565870483143 ,   std = 0.11106200263850362
+terrain : mean = 0.7232541085493683 ,   std = 0.08216600107020662
+tree    : mean = 0.9736421385613483 ,   std = 0.11150969364793961
+
+Change of curvature:
+building: mean = 0.046663981433086914 , std = 0.03701510372761599
+terrain : mean = 0.015933957577444337 , std = 0.020495047207976784
+tree    : mean = 0.16015040965855912 ,  std = 0.08120167960163455
+
+2D z-range:
+building: mean = 0.6151249885559082 ,   std = 0.3057675279617793
+terrain : mean = 0.3260003089904785 ,   std = 0.1813212889758521
+tree    : mean = 0.8417498588562011 ,   std = 0.25726516426864
+
+STD from plane:
+building: mean = 0.060233117960162216 , std = 0.03831677248072228
+terrain : mean = 0.029480019876370018 , std = 0.02194504964504609
+tree    : mean = 0.10096039720609315 ,  std = 0.03598246102751515
+
+Information from mean and std:
+Linearity:
+* Similar mean
+* tree has much lower std
+
+Planarity:
+* terrain has the highest mean (0.71), but building not long after (0.58)
+* similar std
+
+Scattering:
+* Tree has much higher mean
+
+Omnivariance:
+* Tree a bit higher mean than the rest (0.28 vs 0.19 and 0.12)
+* Equal std
+
+Sum of eigenvalues:
+* Nothing interessting, remove it
+
+Anisotropy:
+* Very high mean for both building (0.91) and terrain (0.97), lower for tree (0.65)
+* Higher std on tree vs the rest (0.20 vs 0.08 and 0.04)
+
+Eigenentropy:
+* Mean og tree is the highest, but building and terrain are close (0.97 vs 0.9 and 0.72)
+* Std ar the same ish
+
+Change of curvature:
+* Tree stands out as higher on mean
+* Std is the same
+
+2D z-range:
+* Tree has a high mean, terrain is the lowest
+* fairly similar menium low std
+
+'''
+
+'''
+Method for each voxel:
+* Calculate feature values
+* Give an normalized score for each class on each feature
+    * Each feature means something
+    * If the voxel indicates one of the classes based on the feature, 
+      give a high score on this class and low in the other classes for this feature
+* Scale the features based on their importance
+* Calculate a normalized score for each class
+* Pick the class with the highest score
+
+'''

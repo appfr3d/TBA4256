@@ -205,7 +205,7 @@ class RANSAC():
 
       # TODO: test out if these values are correct to use
       # Try again if center or radius is bad
-      if center is None or radius < 0.1 or radius > 2:
+      if center is None or radius < 0.1 or radius > 0.35:
         continue
  
       # Calculate which points are close to the circle
@@ -237,6 +237,9 @@ def visualize_10_trees(ransac):
   # # # Do RANSAC several times and save the results
   trees = np.zeros((1,3))
   for i in range(20):
+
+    # TODO: check if the same tree is found before.
+
     # Run the calculations
     tree, diameter = ransac.run_calculations()
 
