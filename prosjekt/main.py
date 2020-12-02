@@ -9,9 +9,6 @@ import matplotlib.pyplot as plt
 #Scattering to find treees
 
 
-
-
-
 class Classification():
     def __init__(self):
         #Voxelization
@@ -19,7 +16,7 @@ class Classification():
         self.grid_size = 4
         voxelgrid_id = pcd.add_structure("voxelgrid", size_x=self.grid_size, size_y=self.grid_size, size_z=self.grid_size)
         self.voxelgrid = pcd.structures[voxelgrid_id]
-        #voxelgrid.plot(d=3, mode="density", cmap="hsv")
+        # voxelgrid.plot(d=3, mode="density", cmap="hsv")
         print("Total number of points:", len(pcd.points))
         print("Total number of voxels:", self.voxelgrid.n_voxels)
         self.occupied_voxels = np.unique(self.voxelgrid.voxel_n)
@@ -31,7 +28,7 @@ class Classification():
 
         self.all_points = o3d.geometry.PointCloud()
         self.all_points.points = o3d.utility.Vector3dVector(self.pcd_array[:,:3])
-        # all_points.paint_uniform_color([0.1, 0.1, 0.1])
+        # self.all_points.paint_uniform_color([0.1, 0.1, 0.1])
         # colors = [[0, 0, 0.1*j] for j in range(10)]
         # all_points.colors = o3d.utility.Vector3dVector(colors)
 
@@ -39,7 +36,19 @@ class Classification():
         self.features = np.zeros((self.occupied_voxels.shape[0], self.num_features))
         self.feature_names = ['Linearity', 'Planarity', 'Scattering', 'Omnivariance', '∑ eigenvalues', 'Anisotropy', 'Eigenentropy', '∆ curvature', '2D z-range', 'STD from plane'] 
         self.mean_and_std = np.zeros((self.num_features,3,2))
-        self.selected_feature_indecies = [1, 2, 3, 7]
+        
+        if self.grid_size == 8:
+            # For grid_size 8
+            self.selected_feature_indecies = [1, 2, 3, 7]
+        else:
+            # For grid_size 4
+            self.selected_feature_indecies = [3, 9]
+
+        # For all features
+        # self.selected_feature_indecies = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+        # TODO: sett riktig...
+        self.selected_feature_weights = [1, 1, 1, 1, 1, 1, 1, 1, 1]
 
     def run_calculations(self):
         # Find mean and std values for the features
@@ -81,19 +90,24 @@ class Classification():
         # Will only visualize the classified voxels, not voxels with too few points in it (<10)
         self.visualize_all_voxels_with_class(building_points, terrain_points, tree_points)
 
+    def get_voxel_indecies(self):
+        if self.grid_size == 8:
+            # for grid_size = 8
+            building_voxel_indecies = [114, 115, 121, 999, 1009, 1015, 1029, 1031, 2723, 2724]
+            terrain_voxel_indecies = [102, 104, 105, 106, 110, 123, 125, 126, 2729, 2732]
+            tree_voxel_indecies = [103, 2701, 2704, 2705, 2708, 2709, 2711, 2712, 2716, 2717]
+            return building_voxel_indecies, terrain_voxel_indecies, tree_voxel_indecies
+
+        # for grid_size = 4
+        building_voxel_indecies = [327, 444, 445, 446, 454, 560, 712, 1405, 5089, 8151]
+        terrain_voxel_indecies = [213, 300, 301, 401, 449, 1413, 1414, 5080, 5104, 5117]
+        tree_voxel_indecies = [208, 211, 5002, 5009, 8083, 8088, 8092, 8108, 8113, 8120]
+        return building_voxel_indecies, terrain_voxel_indecies, tree_voxel_indecies
+
     def select_features(self):
         # Feature selection 
         # Find out which values 
-
-        # for grid_size = 8
-        building_voxel_indecies = [114, 115, 121, 999, 1009, 1015, 1029, 1031, 2723, 2724]
-        terrain_voxel_indecies = [102, 104, 105, 106, 110, 123, 125, 126, 2729, 2732]
-        tree_voxel_indecies = [103, 2701, 2704, 2705, 2708, 2709, 2711, 2712, 2716, 2717]
-
-        # for grid_size = 4
-        # building_voxel_indecies = [327, 444, 445, 446]
-        # terrain_voxel_indecies = [213, 300, 301, 449]
-        # tree_voxel_indecies = [208, 211, ]
+        building_voxel_indecies, terrain_voxel_indecies, tree_voxel_indecies = self.get_voxel_indecies()
         
         for i, voxel in enumerate(self.occupied_voxels): #gå gjennom voxelsene som er bruk
             tmp = np.where(self.voxelgrid.voxel_n == voxel)
@@ -101,7 +115,8 @@ class Classification():
             voxel_points = self.pcd_array[tmp]
             #legger til alle punktene i liste
 
-            if len(tmp[0]) > 10: #må ha punkter som er flere
+            # Må ha nok punkter i voxelen
+            if len(tmp[0]) > 10: 
                 self.pca.fit(voxel_points)
                 ev = self.pca.explained_variance_
                 ev_norm = self.pca.explained_variance_ratio_
@@ -126,19 +141,22 @@ class Classification():
                 # Standard deviation from a plane
                 plane_std = self.standard_deviation_from_plane(voxel_points, i)
                 
-                '''
-                if i in building_voxel_indecies:
-                    self.visualize_voxel_on_cloud(voxel_points, i)
-                '''
-
-                # if i >= 430:
-                #     self.visualize_voxel_on_cloud(voxel_points, i)
-
-                fs = [L, P, S, O, sum_ev_norm, A, E, change_curvature, z_range, plane_std] #liste med alle
+                # Liste med alle featursene
+                fs = [L, P, S, O, sum_ev_norm, A, E, change_curvature, z_range, plane_std] 
                 
                 self.features[i] = fs
+
+                # if i in building_voxel_indecies:
+                #     self.visualize_voxel_on_cloud(voxel_points, i)
+
+                # if i >= 400:
+                #     self.visualize_voxel_on_cloud(voxel_points, i)
         
-        # [L, P, S, O, sum_ev, A, E, change_curvature] 
+        # Nomalize plane_std
+        max_plane_std = np.max(self.features[:,9])
+        self.features[:, 9] /= max_plane_std
+
+        # [L, P, S, O, sum_ev, A, E, change_curvature, z_range, plane_std] 
         building_mean_features = np.mean([self.features[v_i] for v_i in building_voxel_indecies], axis=0)
         terrain_mean_features = np.mean([self.features[v_i] for v_i in terrain_voxel_indecies], axis=0)
         tree_mean_features = np.mean([self.features[v_i] for v_i in tree_voxel_indecies], axis=0)
@@ -154,6 +172,8 @@ class Classification():
             self.mean_and_std[i, 0] = [building_mean_features[i], building_std_features[i]]
             self.mean_and_std[i, 1] = [terrain_mean_features[i], terrain_std_features[i]]
             self.mean_and_std[i, 2] = [tree_mean_features[i], tree_std_features[i]]
+
+            # self.mean_and_std[feature_index, class_index, 0 for mean eller 1 for std]
             
             # print(self.feature_names[i] + ':')
             # print('building: mean =', building_mean_features[i], ',\tstd =', building_std_features[i])
@@ -166,23 +186,35 @@ class Classification():
         # TODO: find a good measure for each of the features.
         # Must be fair for each of the features...
         # Go through each selected_feature_indecies
-
+        
         # class_points = [building_value, terrain_value, tree_value]
         classes = ["building", "terrain", "tree"]
         class_points = [0,0,0]
-        for feature_index in self.selected_feature_indecies:
+        for i, feature_index in enumerate(self.selected_feature_indecies):
             # Give points based on how close (in value, not index) the voxel is 
             # to corespoding mean value for each class
             # Multiply this value by the std to make the values more accurate
             # 1 - this value means it will be higher when:
             # * the voxel-feature-value is closer to the stored mean feature value
             # * the smaller the stored std feature value
-            for i in range(3):
-                value = np.abs(self.features[voxel_index, feature_index] - self.mean_and_std[feature_index, i, 0])
+            for class_index in range(len(classes)):
+                # Skaler dist likt som 0-np.max(self.mean_and_std[feature_index, class_index, 0]) skaleres til 0-1
+                # Blir en form for normalisering, sånn at hver featue teller likt, og at de med lave tall ikke teller mye mer
+                dist = np.abs(self.features[voxel_index, feature_index] - self.mean_and_std[feature_index, class_index, 0])
+                value = dist*self.mean_and_std[feature_index, class_index, 1]
+                class_points[class_index] += (1 - value)*self.selected_feature_weights[i]
+        
+        building_voxel_indecies, terrain_voxel_indecies, tree_voxel_indecies = self.get_voxel_indecies()
+        determined_class = classes[np.argmax(class_points)]
 
-                class_points[i] += 1 - value*self.mean_and_std[feature_index, i, 1]
+        if voxel_index in building_voxel_indecies and determined_class != classes[0]:
+            print('Voxel number', voxel_index, 'classified as', determined_class, 'but should be building. Points:', class_points)
+        elif voxel_index in terrain_voxel_indecies and determined_class != classes[1]:
+            print('Voxel number', voxel_index, 'classified as', determined_class, 'but should be terrain.  Points:', class_points)
+        elif voxel_index in tree_voxel_indecies and determined_class != classes[2]:
+            print('Voxel number', voxel_index, 'classified as', determined_class, 'but should be tree.     Points:', class_points)
 
-        return classes[np.argmax(class_points)]
+        return determined_class
 
     def standard_deviation_from_plane(self, points, i):
         # Plane calculation mostly taken from: 
@@ -212,26 +244,8 @@ class Classification():
     def plot_feature_mean_and_std(self):
         # Mostly taken from example:
         # https://matplotlib.org/3.1.1/gallery/lines_bars_and_markers/barchart.html#sphx-glr-gallery-lines-bars-and-markers-barchart-py
-        building_means = [self.mean_and_std[i, 0, 0] for i in self.selected_feature_indecies]
-        terrain_means = [self.mean_and_std[i, 1, 0] for i in self.selected_feature_indecies]
-        tree_means = [self.mean_and_std[i, 2, 0] for i in self.selected_feature_indecies]
-
-        x = np.arange(len(self.selected_feature_indecies))  # the label locations
-        width = 0.3  # the width of the bars
-
-        fig, ax = plt.subplots()
-        rects1 = ax.bar(x - width, building_means, width, label='Building')
-        rects2 = ax.bar(x, terrain_means, width, label='Terrain')
-        rects3 = ax.bar(x + width, tree_means, width, label='Tree')
-
-        # Add some text for labels, title and custom x-axis tick labels, etc.
-        ax.set_ylabel('Mean')
-        ax.set_title('Mean by feature and class')
-        ax.set_xticks(x)
-        ax.set_xticklabels([self.feature_names[i] for i in self.selected_feature_indecies])
-        ax.legend()
-
-        def autolabel(rects):
+        
+        def autolabel(rects, ax):
             """Attach a text label above each bar in *rects*, displaying its height."""
             for rect in rects:
                 height = rect.get_height()
@@ -240,15 +254,43 @@ class Classification():
                             xytext=(0, 3),  # 3 points vertical offset
                             textcoords="offset points",
                             ha='center', va='bottom')
-        autolabel(rects1)
-        autolabel(rects2)
-        autolabel(rects3)
 
-        plt.setp(ax.get_xticklabels(), fontsize=10, rotation=-45)
+        def make_plot(values, value_name):
+            x = np.arange(len(self.selected_feature_indecies))  # the label locations
+            width = 0.3  # the width of the bars
+            fig, ax = plt.subplots()
+            rects1 = ax.bar(x - width, values[0], width, label='Building')
+            rects2 = ax.bar(x, values[1], width, label='Terrain')
+            rects3 = ax.bar(x + width, values[2], width, label='Tree')
 
-        fig.tight_layout()
+            # Add some text for labels, title and custom x-axis tick labels, etc.
+            ax.set_ylabel(value_name)
+            ax.set_title(f'{value_name} by feature and class with grid size {self.grid_size}')
+            ax.set_xticks(x)
+            ax.set_xticklabels([self.feature_names[i] for i in self.selected_feature_indecies])
+            ax.legend()
 
-        plt.show()
+            autolabel(rects1, ax)
+            autolabel(rects2, ax)
+            autolabel(rects3, ax)
+
+            plt.setp(ax.get_xticklabels(), fontsize=10, rotation=-45)
+
+            fig.tight_layout()
+
+            plt.show()
+
+        building_means = [self.mean_and_std[i, 0, 0] for i in self.selected_feature_indecies]
+        terrain_means = [self.mean_and_std[i, 1, 0] for i in self.selected_feature_indecies]
+        tree_means = [self.mean_and_std[i, 2, 0] for i in self.selected_feature_indecies]
+
+        make_plot([building_means, terrain_means, tree_means], 'Means')
+        
+        building_std = [self.mean_and_std[i, 0, 1] for i in self.selected_feature_indecies]
+        terrain_std = [self.mean_and_std[i, 1, 1] for i in self.selected_feature_indecies]
+        tree_std = [self.mean_and_std[i, 2, 1] for i in self.selected_feature_indecies]
+
+        make_plot([building_std, terrain_std, tree_std], 'STD')
 
     def visualize_voxel_on_cloud(self, voxel_points, i):
         print(i)
@@ -274,8 +316,66 @@ class Classification():
 
         o3d.visualization.draw_geometries([building, terrain, tree])
 
+    def visualize_voxel_indecies(self):
+        building_voxel_indecies, terrain_voxel_indecies, tree_voxel_indecies = self.get_voxel_indecies()
+
+        # Initialize the point arrays
+        # building_points = [self.pcd_array[np.where(self.voxelgrid.voxel_n == self.occupied_voxels[i])][:,:3] for i in building_voxel_indecies]
+        # terrain_points = [self.pcd_array[np.where(self.voxelgrid.voxel_n == self.occupied_voxels[i])][:,:3] for i in terrain_voxel_indecies]
+        # tree_points = [self.pcd_array[np.where(self.voxelgrid.voxel_n == self.occupied_voxels[i])][:,:3] for i in tree_voxel_indecies]
+        
+        # Initialize the point arrays
+        building_points = np.zeros((1,3))
+        terrain_points = np.zeros((1,3))
+        tree_points = np.zeros((1,3))
+        
+        nums = [0,0,0]
+
+        for i, voxel in enumerate(self.occupied_voxels):
+            if i in building_voxel_indecies:
+                tmp = np.where(self.voxelgrid.voxel_n == voxel)
+                voxel_points = self.pcd_array[tmp]
+                print('new building voxel:', voxel_points.shape[0])
+                building_points = np.append(building_points, voxel_points[:,:3], axis=0)
+                nums[0] += 1
+            elif i in terrain_voxel_indecies:
+                tmp = np.where(self.voxelgrid.voxel_n == voxel)
+                voxel_points = self.pcd_array[tmp]
+                print('new terrain voxel:', voxel_points.shape[0])
+                terrain_points = np.append(terrain_points, voxel_points[:,:3], axis=0)
+                nums[1] += 1
+            elif i in tree_voxel_indecies:
+                tmp = np.where(self.voxelgrid.voxel_n == voxel)
+                voxel_points = self.pcd_array[tmp]
+                print('new tree voxel:', voxel_points.shape[0])
+                tree_points = np.append(tree_points, voxel_points[:,:3], axis=0)
+                nums[2] += 1
+        # Delete the initial zeros
+        building_points = np.delete(building_points, 0, axis=0)
+        terrain_points = np.delete(terrain_points, 0, axis=0)
+        tree_points = np.delete(tree_points, 0, axis=0)
+
+        print('Number of voxels:', nums)
+
+        building = o3d.geometry.PointCloud()
+        building.points = o3d.utility.Vector3dVector(building_points + [0,0,0.1])
+        building.paint_uniform_color([1, 0, 0])
+
+        terrain = o3d.geometry.PointCloud()
+        terrain.points = o3d.utility.Vector3dVector(terrain_points + [0,0,0.1])
+        terrain.paint_uniform_color([0, 1, 0])
+
+        tree = o3d.geometry.PointCloud()
+        tree.points = o3d.utility.Vector3dVector(tree_points + [0,0,0.1])
+        tree.paint_uniform_color([0, 0, 1])
+
+        self.all_points.paint_uniform_color([0.1, 0.1, 0.1])
+
+        o3d.visualization.draw_geometries([self.all_points, building, terrain, tree])
+
 if __name__ == "__main__":
     classifier = Classification()
-    classifier.select_features()
+    # classifier.select_features()
     # classifier.plot_feature_mean_and_std()
-    # classifier.run_calculations()
+    # classifier.visualize_voxel_indecies()
+    classifier.run_calculations()
