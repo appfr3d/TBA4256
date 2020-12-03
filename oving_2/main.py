@@ -125,11 +125,11 @@ class RANSAC():
       # Set up a 3D bounding box around the tree stems
       all_distances = self.calculate_circle_ditances(self.sorted_cloud, center)
       tree = self.calculate_close_points(self.sorted_cloud, all_distances, max_point_distance + max_point_distance * 0.3)
-      diameter = tree_part.radius * 2
+      # diameter = tree_part.radius * 2
       tree_found = True
 
     # Export the point clouds inside the bounding boxes
-    return tree, diameter
+    return tree, tree_part
 
   def sort_cloud(self, cloud):
     return cloud[np.argsort(cloud[:, 2])]
@@ -236,13 +236,24 @@ class RANSAC():
 def visualize_10_trees(ransac):
   # # # Do RANSAC several times and save the results
   trees = np.zeros((1,3))
-  for i in range(20):
-
-    # TODO: check if the same tree is found before.
-
+  tree_centers = np.zeros((1,3))
+  i = 0
+  while i < 10:
     # Run the calculations
-    tree, diameter = ransac.run_calculations()
+    tree, tree_part = ransac.run_calculations()
+    
+    # TODO: check if the same tree is found before of if this  
+    # prevents it from happeing
+    found_before = False
+    for c in range(tree_centers.shape[0]):
+      if np.sqrt(np.sum((tree_part.center - tree_centers[c])**2)) < 0.2:
+        found_before = True
 
+    if found_before:
+      print('Tree found before...')
+      continue
+
+    diameter = tree_part.radius * 2
     # Show progress
     print("-"*5, "Found tree", i, "-"*5)
     print('Number of points:', tree.shape[0])
@@ -251,6 +262,8 @@ def visualize_10_trees(ransac):
     # Elevate roof points to make them visible
     # tree = tree + [0, 0, 0.01]
     trees = np.append(trees, tree, axis=0)
+    tree_centers = np.append(tree_centers, tree_part.center)
+    i += 1
 
   print("-"*5, "DONE", "-"*5)
   trees = np.delete(trees, 0, axis=0)
@@ -258,6 +271,7 @@ def visualize_10_trees(ransac):
   # Generate o3d cloud
   cloud = o3d.geometry.PointCloud()
   cloud.points = o3d.utility.Vector3dVector(trees)
+
   # cloud.paint_uniform_color([0.1, 0.1, 0.1])
 
   # TODO: set up a BB around each tree

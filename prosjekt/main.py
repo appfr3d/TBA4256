@@ -42,13 +42,13 @@ class Classification():
             self.selected_feature_indecies = [1, 2, 3, 7]
         else:
             # For grid_size 4
-            self.selected_feature_indecies = [3, 9]
+            self.selected_feature_indecies = [1, 2, 3, 5, 6, 7, 9]
 
         # For all features
         # self.selected_feature_indecies = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 
         # TODO: sett riktig...
-        self.selected_feature_weights = [1, 1, 1, 1, 1, 1, 1, 1, 1]
+        self.selected_feature_weights = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
 
     def run_calculations(self):
         # Find mean and std values for the features
@@ -86,6 +86,15 @@ class Classification():
         terrain_points = np.delete(terrain_points, 0, axis=0)
         tree_points = np.delete(tree_points, 0, axis=0)
 
+        # Print out some stats
+        total_points_classified = building_points.shape[0] + terrain_points.shape[0] + tree_points.shape[0]
+        building_percentage = building_points.shape[0] / total_points_classified
+        terrain_percentage = terrain_points.shape[0] / total_points_classified
+        tree_percentage = tree_points.shape[0] / total_points_classified
+        print('Number of building points:', building_points.shape[0], '= ' + str(building_percentage) + '%')
+        print('Number of terrain points :', terrain_points.shape[0], '= ' + str(terrain_percentage) + '%')
+        print('Number of tree points    :', tree_points.shape[0], '= ' + str(tree_percentage) + '%')
+
         # Visualize the result
         # Will only visualize the classified voxels, not voxels with too few points in it (<10)
         self.visualize_all_voxels_with_class(building_points, terrain_points, tree_points)
@@ -99,9 +108,17 @@ class Classification():
             return building_voxel_indecies, terrain_voxel_indecies, tree_voxel_indecies
 
         # for grid_size = 4
-        building_voxel_indecies = [327, 444, 445, 446, 454, 560, 712, 1405, 5089, 8151]
-        terrain_voxel_indecies = [213, 300, 301, 401, 449, 1413, 1414, 5080, 5104, 5117]
-        tree_voxel_indecies = [208, 211, 5002, 5009, 8083, 8088, 8092, 8108, 8113, 8120]
+        # fine
+        building_voxel_indecies = [327, 443, 454, 560, 559, 712, 1405, 2997, 3172, 3174, 3190, 3206, 5089, 8151]
+        terrain_voxel_indecies = [213, 300, 301, 401, 449, 525, 530, 1413, 1414, 2991, 3164, 5080, 5104, 5117]
+        tree_voxel_indecies = [208, 211, 708, 5002, 5009, 8083, 8088, 8092, 8108, 8113, 8120, 11175, 11176, 11155]
+        
+        # grove
+        # building_voxel_indecies = [46, 63, 129, 398, 499, 500]
+        # terrain_voxel_indecies = [1, 2, 11, 13, 121, 495]
+        # tree_voxel_indecies = [21, 260, 261, 404, 405]
+        # ekstra grove: 11, 63, 398
+
         return building_voxel_indecies, terrain_voxel_indecies, tree_voxel_indecies
 
     def select_features(self):
@@ -142,19 +159,23 @@ class Classification():
                 plane_std = self.standard_deviation_from_plane(voxel_points, i)
                 
                 # Liste med alle featursene
-                fs = [L, P, S, O, sum_ev_norm, A, E, change_curvature, z_range, plane_std] 
+                fs = [L, P, S, O, sum_ev, A, E, change_curvature, z_range, plane_std] 
                 
                 self.features[i] = fs
 
                 # if i in building_voxel_indecies:
                 #     self.visualize_voxel_on_cloud(voxel_points, i)
 
-                # if i >= 400:
+                # if i >= 490:
                 #     self.visualize_voxel_on_cloud(voxel_points, i)
         
         # Nomalize plane_std
-        max_plane_std = np.max(self.features[:,9])
+        max_plane_std = np.max(self.features[:, 9])
         self.features[:, 9] /= max_plane_std
+
+        # Normalize sum_ev
+        max_sum_ev = np.max(self.features[:, 4])
+        self.features[:, 4] /= max_sum_ev
 
         # [L, P, S, O, sum_ev, A, E, change_curvature, z_range, plane_std] 
         building_mean_features = np.mean([self.features[v_i] for v_i in building_voxel_indecies], axis=0)
@@ -292,6 +313,9 @@ class Classification():
 
         make_plot([building_std, terrain_std, tree_std], 'STD')
 
+    def visualize_cloud(self):
+        o3d.visualization.draw_geometries([self.all_points])
+
     def visualize_voxel_on_cloud(self, voxel_points, i):
         print(i)
         vox = o3d.geometry.PointCloud()
@@ -378,4 +402,5 @@ if __name__ == "__main__":
     # classifier.select_features()
     # classifier.plot_feature_mean_and_std()
     # classifier.visualize_voxel_indecies()
+    # classifier.visualize_cloud()
     classifier.run_calculations()
