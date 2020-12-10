@@ -166,9 +166,13 @@ class Classification():
                 # if i in building_voxel_indecies:
                 #     self.visualize_voxel_on_cloud(voxel_points, i)
 
-                # if i >= 490:
+                # if i >= 1800:
                 #     self.visualize_voxel_on_cloud(voxel_points, i)
         
+        # buildings: [129, 132, 151, 152, 682, 684, 712, 713, 716, 725, 726, 743, 745, ]
+        # terrain  : [5, 80, 81, 96, 97, 104, 114, 156, 184, 555, 727, 731, 744, 754, ]
+        # trees    : [86, 87, 89, 90, 103, 171, 173, 174, 764]
+
         # Nomalize plane_std
         max_plane_std = np.max(self.features[:, 9])
         self.features[:, 9] /= max_plane_std
@@ -262,6 +266,41 @@ class Classification():
         # Return the standard deviation
         return np.std(distances)
 
+    def select_class_indecies(self):
+        ''' Hjelpefunksjon for å finne gode indexer til forskjellige klasser '''
+        # self.select_features()
+
+        random_indecies = np.random.choice(self.occupied_voxels.shape[0], 80, replace=False)
+
+        building_voxel_indecies = []
+        terrain_voxel_indecies = []
+        tree_voxel_indecies = []
+
+        for i, voxel in enumerate(self.occupied_voxels): #gå gjennom voxelsene som er bruk
+            if i in random_indecies:
+                tmp = np.where(self.voxelgrid.voxel_n == voxel)
+                #Liste med indexen til alle punktene som har samme index som den voxelen vi er i nå
+                voxel_points = self.pcd_array[tmp]
+                #legger til alle punktene i liste
+
+                # Må ha nok punkter i voxelen
+                if len(tmp[0]) > 10: 
+                    self.visualize_voxel_on_cloud(voxel_points, i)
+                    klasse = input('Hvilken klasse er voxelen? [Building: 0, Terrain: 1, Tree: 2, None: 3]:')
+                    while not klasse in ['0', '1', '2', '3']:
+                        klasse = input('Hvilken klasse er voxelen? [Building: 0, Terrain: 1, Tree: 2, None: 3]:')
+                    if klasse != '3':
+                        if klasse == '0':
+                            building_voxel_indecies.append(i)
+                        elif klasse == '1':
+                            terrain_voxel_indecies.append(i)
+                        elif klasse == '2':
+                            tree_voxel_indecies.append(i)
+                        print('building indecies:', building_voxel_indecies)
+                        print('terrain indecies :', terrain_voxel_indecies)
+                        print('tree indecies    :', tree_voxel_indecies)
+                        print(len(building_voxel_indecies), len(terrain_voxel_indecies), len(tree_voxel_indecies))     
+
     def plot_feature_mean_and_std(self):
         # Mostly taken from example:
         # https://matplotlib.org/3.1.1/gallery/lines_bars_and_markers/barchart.html#sphx-glr-gallery-lines-bars-and-markers-barchart-py
@@ -316,6 +355,11 @@ class Classification():
     def visualize_cloud(self):
         o3d.visualization.draw_geometries([self.all_points])
 
+    def visualize_voxalization(self):
+        self.all_points.colors = o3d.utility.Vector3dVector(np.random.uniform(0, 1, size=self.pcd_array[:,:3].shape))
+        voxel_grid = o3d.geometry.VoxelGrid.create_from_point_cloud(self.all_points, voxel_size=self.grid_size)
+        o3d.visualization.draw_geometries([voxel_grid])
+
     def visualize_voxel_on_cloud(self, voxel_points, i):
         print(i)
         vox = o3d.geometry.PointCloud()
@@ -326,6 +370,7 @@ class Classification():
         o3d.visualization.draw_geometries([self.all_points, vox])
 
     def visualize_all_voxels_with_class(self, building_points, terrain_points, tree_points):
+        # First as points
         building = o3d.geometry.PointCloud()
         building.points = o3d.utility.Vector3dVector(building_points)
         building.paint_uniform_color([1, 0, 0])
@@ -340,8 +385,13 @@ class Classification():
 
         o3d.visualization.draw_geometries([building, terrain, tree])
 
-    def visualize_voxel_indecies(self):
-        building_voxel_indecies, terrain_voxel_indecies, tree_voxel_indecies = self.get_voxel_indecies()
+        # Then as voxesl
+        voxel_grid1 = o3d.geometry.VoxelGrid.create_from_point_cloud(tree, voxel_size=self.grid_size)
+        voxel_grid2 = o3d.geometry.VoxelGrid.create_from_point_cloud(terrain, voxel_size=self.grid_size)
+        voxel_grid3 = o3d.geometry.VoxelGrid.create_from_point_cloud(building, voxel_size=self.grid_size)
+        o3d.visualization.draw_geometries([voxel_grid1, voxel_grid2, voxel_grid3])
+
+    def visualize_voxel_indecies(self, building_voxel_indecies, terrain_voxel_indecies, tree_voxel_indecies):
 
         # Initialize the point arrays
         # building_points = [self.pcd_array[np.where(self.voxelgrid.voxel_n == self.occupied_voxels[i])][:,:3] for i in building_voxel_indecies]
@@ -359,19 +409,19 @@ class Classification():
             if i in building_voxel_indecies:
                 tmp = np.where(self.voxelgrid.voxel_n == voxel)
                 voxel_points = self.pcd_array[tmp]
-                print('new building voxel:', voxel_points.shape[0])
+                # print('new building voxel:', voxel_points.shape[0])
                 building_points = np.append(building_points, voxel_points[:,:3], axis=0)
                 nums[0] += 1
             elif i in terrain_voxel_indecies:
                 tmp = np.where(self.voxelgrid.voxel_n == voxel)
                 voxel_points = self.pcd_array[tmp]
-                print('new terrain voxel:', voxel_points.shape[0])
+                # print('new terrain voxel:', voxel_points.shape[0])
                 terrain_points = np.append(terrain_points, voxel_points[:,:3], axis=0)
                 nums[1] += 1
             elif i in tree_voxel_indecies:
                 tmp = np.where(self.voxelgrid.voxel_n == voxel)
                 voxel_points = self.pcd_array[tmp]
-                print('new tree voxel:', voxel_points.shape[0])
+                # print('new tree voxel:', voxel_points.shape[0])
                 tree_points = np.append(tree_points, voxel_points[:,:3], axis=0)
                 nums[2] += 1
         # Delete the initial zeros
@@ -395,12 +445,69 @@ class Classification():
 
         self.all_points.paint_uniform_color([0.1, 0.1, 0.1])
 
+        # Visualize with and without backgound points
         o3d.visualization.draw_geometries([self.all_points, building, terrain, tree])
+        o3d.visualization.draw_geometries([building, terrain, tree])
+
+    def evaluate_voxel_classes(self):
+        building_indecies = [129, 132, 151, 152, 682, 684, 712, 713, 716, 725, 726, 743, 745, 1787, 1789, 1805, 1807, 1810, 1815, 4029]
+        terrain_indecies  = [32, 1967, 3296, 3352, 3366, 3477, 4098, 4183, 4187, 5050, 5360, 5794, 6136, 6389, 7228, 7623, 8094, 9463, 10217, 11066, 11300, 11333, 12032, 12077, 12129, 12546, 12812]
+        tree_indecies     = [86, 173, 764, 5257, 9572, 9653, 5363, 5634, 7735, 8444, 8457, 5755, 6573, 6668, 7328, 8496, 8527, 8631, 8990, 9399, 9790, 10069, 10244, 10389, 10490, 10567, 10758, 11059, 11131, 11159, 11176, 11697, 12907, 13005, 13453]
+
+        self.visualize_voxel_indecies(building_indecies, terrain_indecies[:20], tree_indecies[:20])        
+        
+        building_results = []
+        terrain_results  = []
+        tree_results     = []
+
+        detected_building_indecies = []
+        detected_terrain_indecies  = []
+        detected_tree_indecies     = []
+
+        for i in range(20):
+            guess = self.determine_voxel_class(building_indecies[i])
+            building_results.append(guess)
+            if guess == 'building':
+                detected_building_indecies.append(building_indecies[i])
+            elif guess == 'terrain':
+                detected_terrain_indecies.append(building_indecies[i])
+            elif guess == 'tree':
+                detected_tree_indecies.append(building_indecies[i])
+
+            guess = self.determine_voxel_class(terrain_indecies[i])
+            terrain_results.append(guess)
+            if guess == 'building':
+                detected_building_indecies.append(terrain_indecies[i])
+            elif guess == 'terrain':
+                detected_terrain_indecies.append(terrain_indecies[i])
+            elif guess == 'tree':
+                detected_tree_indecies.append(terrain_indecies[i])
+            
+            guess = self.determine_voxel_class(tree_indecies[i])
+            tree_results.append(guess)
+            if guess == 'building':
+                detected_building_indecies.append(tree_indecies[i])
+            elif guess == 'terrain':
+                detected_terrain_indecies.append(tree_indecies[i])
+            elif guess == 'tree':
+                detected_tree_indecies.append(tree_indecies[i])
+
+        
+        print(building_results.count('building'), terrain_results.count('building'), tree_results.count('building'))
+        print(building_results.count('terrain'), terrain_results.count('terrain'), tree_results.count('terrain'))
+        print(building_results.count('tree'), terrain_results.count('tree'), tree_results.count('tree'))
+
+        self.visualize_voxel_indecies(detected_building_indecies, detected_terrain_indecies, detected_tree_indecies)
+
 
 if __name__ == "__main__":
     classifier = Classification()
-    # classifier.select_features()
+    classifier.select_features()
     # classifier.plot_feature_mean_and_std()
-    # classifier.visualize_voxel_indecies()
+    # building_voxel_indecies, terrain_voxel_indecies, tree_voxel_indecies = classifier.get_voxel_indecies()
+    # classifier.visualize_voxel_indecies(building_voxel_indecies, terrain_voxel_indecies, tree_voxel_indecies)
     # classifier.visualize_cloud()
-    classifier.run_calculations()
+    # classifier.visualize_voxalization()
+    # classifier.select_class_indecies()
+    classifier.evaluate_voxel_classes()
+    # classifier.run_calculations()

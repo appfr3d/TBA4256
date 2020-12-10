@@ -38,7 +38,7 @@ class RANSAC():
   def __init__(self):
     # Preprocess
     # Read data from file
-    dataFile = File('original_slice.las', mode='r')
+    dataFile = File('original_slice_new.las', mode='r')
     self.max = dataFile.header.max
     self.min = dataFile.header.min
     # print('Max z:', self.max[2], ', min z:', self.min[2])
@@ -53,7 +53,8 @@ class RANSAC():
     self.sorted_cloud = self.sort_cloud(self.xyz)
 
     # Slice point cloud in horizontal direction
-    num_slices = 5
+    num_slices = 20
+    start_slice = 0
     slices = self.slice_cloud(self.sorted_cloud, num_slices)
 
     tree = None
@@ -63,7 +64,7 @@ class RANSAC():
 
     while not tree_found:
       # Find a good part of the cloud to do RANSAC on
-      good_part, center = self.find_good_part(slices[0], max_point_distance)
+      good_part, center = self.find_good_part(slices[start_slice], max_point_distance)
 
       # RANSAC on circles in a slice in 2D by disregarding the z-value
       tree_part, variance = self.run_ransac(good_part)
@@ -84,7 +85,7 @@ class RANSAC():
       # The range could be increased to check more layers
       # If increased, the logic for when to break should be changed, as if 9/10 layers are good, 
       # it would still not consider it as a good tree
-      for i in range(1, 3):
+      for i in range(start_slice + 1, start_slice + 3):
         # Calculate point distances to the center in the next layer
         point_distances = self.calculate_circle_ditances(slices[i], center)
 
@@ -124,7 +125,7 @@ class RANSAC():
       # Else, good! Make the tree
       # Set up a 3D bounding box around the tree stems
       all_distances = self.calculate_circle_ditances(self.sorted_cloud, center)
-      tree = self.calculate_close_points(self.sorted_cloud, all_distances, max_point_distance + max_point_distance * 0.3)
+      tree = self.calculate_close_points(self.sorted_cloud, all_distances, max_point_distance + max_point_distance * 0.8)
       # diameter = tree_part.radius * 2
       tree_found = True
 
@@ -236,17 +237,17 @@ class RANSAC():
 def visualize_10_trees(ransac):
   # # # Do RANSAC several times and save the results
   trees = np.zeros((1,3))
-  tree_centers = np.zeros((1,3))
+  bounding_boxes = []
+  tree_centers = []
   i = 0
   while i < 10:
     # Run the calculations
     tree, tree_part = ransac.run_calculations()
-    
-    # TODO: check if the same tree is found before of if this  
+  
     # prevents it from happeing
     found_before = False
-    for c in range(tree_centers.shape[0]):
-      if np.sqrt(np.sum((tree_part.center - tree_centers[c])**2)) < 0.2:
+    for c in range(len(tree_centers)):
+      if np.sqrt(np.sum([(tree_part.center[v] - tree_centers[c][v])**2 for v in [0,1]])) < 0.2:
         found_before = True
 
     if found_before:
@@ -262,7 +263,23 @@ def visualize_10_trees(ransac):
     # Elevate roof points to make them visible
     # tree = tree + [0, 0, 0.01]
     trees = np.append(trees, tree, axis=0)
-    tree_centers = np.append(tree_centers, tree_part.center)
+    
+    # Store center to be able to detect duplicates
+    tree_centers.append(tree_part.center)
+
+    # Create and store the BB
+    o3d_tree = o3d.geometry.PointCloud()
+    o3d_tree.points = o3d.utility.Vector3dVector(tree)
+    bb = o3d_tree.get_oriented_bounding_box()
+    
+    # TODO: Get bb dimentions end print them out
+    print('Volume          :', bb.volume())
+    max_bound = bb.get_max_bound()
+    min_bound = bb.get_min_bound()
+    print('Height          :', max_bound[2] - min_bound[2])
+
+
+    bounding_boxes.append(bb)
     i += 1
 
   print("-"*5, "DONE", "-"*5)
@@ -281,7 +298,7 @@ def visualize_10_trees(ransac):
   # add a in the list to draw
 
   # Visualize the cloud
-  o3d.visualization.draw_geometries([cloud])
+  o3d.visualization.draw_geometries([cloud] + bounding_boxes)
 
   # Visualize with pptk
   # v = pptk.viewer(trees, trees[:, 2])
@@ -296,12 +313,12 @@ def visualize_good_slice(ransac):
   sorted_cloud = ransac.sort_cloud(ransac.xyz)
 
   # Slice point cloud in horizontal direction
-  num_slices = 60
+  num_slices = 20
   slices = ransac.slice_cloud(sorted_cloud, num_slices)
 
   # Generate o3d cloud
   cloud = o3d.geometry.PointCloud()
-  cloud.points = o3d.utility.Vector3dVector(slices[14])
+  cloud.points = o3d.utility.Vector3dVector(slices[0])
   
   # Visualize the cloud
   o3d.visualization.draw_geometries([cloud])
@@ -341,14 +358,22 @@ def visualize_bad_stem_cut(ransac):
   # Visualize the cloud
   o3d.visualization.draw_geometries([cloud])
 
+def visualize_cloud(ransac):
+  # Generate o3d cloud
+  cloud = o3d.geometry.PointCloud()
+  cloud.points = o3d.utility.Vector3dVector(ransac.xyz)
+
+  # Visualize the cloud
+  o3d.visualization.draw_geometries([cloud])
 
 if __name__ == "__main__":
   # Initialice the class
   ransac = RANSAC()
 
-  visualize_10_trees(ransac)
-  # visualize_good_slice(ransac)
+  # visualize_10_trees(ransac)
+  visualize_good_slice(ransac)
   # visualize_bad_stem_cut(ransac)
+  # visualize_cloud(ransac)
 
   
 

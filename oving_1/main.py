@@ -321,6 +321,8 @@ Total iterations in RANSAC         : 10
 Total number of points after RANSAC: 2206
 
 (46566, 3)
+
+Total iterations in RANSAC IN TOTAL: 527 + 20
 '''
 
 
@@ -446,4 +448,11 @@ Total iterations in RANSAC         : 17
 Total number of points after RANSAC: 2658
 
 (50663, 3)
+
+Total iterations in RANSAC IN TOTAL: 495 + 20
+
+
+Both totals summarized: 547 + 515 = 1062
+
+Average number of iterations: 26.5
 '''
